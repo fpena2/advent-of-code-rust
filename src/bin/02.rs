@@ -42,7 +42,29 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    let mut safe_levels = 0;
+    for line in input.lines() {
+        let level: Vec<i32> = line
+            .split(" ")
+            .map(|n| n.parse::<i32>().unwrap())
+            .collect::<Vec<i32>>();
+
+        if is_safe(level.clone()) {
+            safe_levels += 1;
+        } else {
+            let mut test = level.clone();
+            for i in 0..test.len() {
+                test.remove(i);
+                if is_safe(test.clone()) {
+                    safe_levels += 1;
+                    break;
+                }
+                test = level.clone();
+            }
+        }
+    }
+
+    Some(safe_levels)
 }
 
 #[cfg(test)]
@@ -58,6 +80,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(4));
     }
 }
