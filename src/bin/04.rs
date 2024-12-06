@@ -1,14 +1,10 @@
 advent_of_code::solution!(4);
 
-use std::collections::HashSet;
-
 pub fn part_one(input: &str) -> Option<u32> {
     let mut grid: Vec<Vec<char>> = Vec::new();
     for row in input.lines() {
         grid.push(row.chars().collect());
     }
-
-    // print!("length: {}", grid.len());
 
     let mut instances = 0;
     let sequence = "XMAS";
