@@ -12,7 +12,7 @@ fn get_page_rules(page: u32, rules: &Vec<HashMap<u32, u32>>) -> Vec<u32> {
     page_rules
 }
 
-fn check_update(update: &[u32], rules: &Vec<HashMap<u32, u32>>) -> bool {
+fn is_update_valid(update: &[u32], rules: &Vec<HashMap<u32, u32>>) -> bool {
     let mut valid_pages = vec![];
     for (page_index, page) in update.iter().enumerate() {
         let page_rules = get_page_rules(*page, rules);
@@ -38,7 +38,7 @@ fn check_update(update: &[u32], rules: &Vec<HashMap<u32, u32>>) -> bool {
     false
 }
 
-pub fn part_one(input: &str) -> Option<u32> {
+fn process_input(input: &str) -> (Vec<HashMap<u32, u32>>, Vec<Vec<u32>>) {
     let mut rules = Vec::new();
     let mut updates = Vec::new();
     for line in input.lines() {
@@ -56,10 +56,15 @@ pub fn part_one(input: &str) -> Option<u32> {
             updates.push(update);
         }
     }
+    (rules, updates)
+}
+
+pub fn part_one(input: &str) -> Option<u32> {
+    let (rules, updates) = process_input(input);
 
     let mut valid_updates = vec![];
     for update in updates {
-        if check_update(&update, &rules) {
+        if is_update_valid(&update, &rules) {
             valid_updates.push(update.clone());
         }
     }
@@ -67,8 +72,49 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(valid_updates.iter().map(|s| s[s.len() / 2]).sum())
 }
 
+fn fix_invalid_update(update: &[u32], rules: &Vec<HashMap<u32, u32>>) -> Vec<u32> {
+    let mut res = vec![];
+    for &page in update.iter() {
+        // println!("Coming in page: {}", page);
+        if let Some(last_page) = res.last() {
+            // println!("Last page in list: {}", last_page);
+            let last_page_rules = get_page_rules(*last_page, rules);
+            if last_page_rules.contains(&page) {
+                // Rule allows this page to be inserted after the last page
+                res.push(page);
+            } else {
+                for (index, r) in res.clone().iter().enumerate() {
+                    if !get_page_rules(*r, rules).contains(&page) {
+                        // println!("Inserting before page: {} ", r);
+                        res.insert(index, page);
+                        break;
+                    }
+                }
+            }
+        } else {
+            // First page
+            res.push(page);
+        }
+    }
+
+    res
+}
+
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    let (rules, updates) = process_input(input);
+    let mut invalid_updates = vec![];
+    for update in updates {
+        if !is_update_valid(&update, &rules) {
+            invalid_updates.push(update.clone());
+        }
+    }
+
+    Some(
+        invalid_updates
+            .iter()
+            .map(|s| fix_invalid_update(s, &rules)[s.len() / 2])
+            .sum(),
+    )
 }
 
 #[cfg(test)]
@@ -84,6 +130,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(123));
     }
 }
