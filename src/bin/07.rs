@@ -51,20 +51,41 @@ pub fn part_one(input: &str) -> Option<u64> {
     Some(calibration_results)
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
+pub fn part_two(input: &str) -> Option<u64> {
     let mut calibration_results: u64 = 0;
     for line in input.lines() {
         let function = line.split(": ").collect::<Vec<&str>>();
         let result = function[0].parse::<u64>().unwrap();
-        let operations = function[1]
+        let values = function[1]
             .split(" ")
             .map(|v| v.parse::<u64>().unwrap())
             .collect::<Vec<u64>>();
 
-        let op_comb = generate_operation_combinations(operations.len() - 1);
+        for operations in generate_operation_combinations(values.len() - 1).iter() {
+            let mut operations_iter = operations.iter().peekable();
+            let mut operands_view = values.iter().peekable();
+
+            let mut acc = *operands_view.next().unwrap(); //starts as the first operand
+            for operand in operands_view {
+                let operator = *operations_iter.next().unwrap();
+                acc = match operator {
+                    '+' => acc + operand,
+                    '*' => acc * operand,
+                    'c' => { acc.to_string() + &operand.to_string() }
+                        .parse::<u64>()
+                        .unwrap(),
+                    _ => unreachable!(),
+                }
+            }
+
+            if acc == result {
+                calibration_results += acc;
+                break;
+            }
+        }
     }
 
-    None
+    Some(calibration_results)
 }
 
 #[cfg(test)]
@@ -80,6 +101,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(11387));
     }
 }
