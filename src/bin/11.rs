@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 advent_of_code::solution!(11);
 
 fn process_tones(input: String) -> String {
@@ -30,13 +32,23 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<usize> {
-    let mut line = String::from(input);
-    for index in 0..75 {
-        // line = process_tones_multithreaded(line);
-        // println!("{}", index);
+    let mut current_tones: HashMap<usize, usize> = input
+        .split_whitespace()
+        .map(|v| (v.parse::<usize>().unwrap(), 1))
+        .collect();
+
+    for _ in 0..75 {
+        let mut next_tones: HashMap<usize, usize> = HashMap::new();
+        for (tone, count) in current_tones.iter() {
+            for new_tone in process_tones(tone.to_string()).split_whitespace() {
+                let new_count = next_tones.entry(new_tone.parse().unwrap()).or_insert(0);
+                *new_count += count;
+            }
+        }
+        current_tones = next_tones;
     }
 
-    Some(line.split(" ").count())
+    Some(current_tones.values().sum())
 }
 
 #[cfg(test)]
@@ -52,6 +64,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, Some(55312));
+        assert_eq!(result, Some(65601038650482));
     }
 }
