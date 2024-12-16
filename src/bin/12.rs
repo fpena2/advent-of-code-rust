@@ -1,3 +1,4 @@
+use core::num;
 use std::collections::{HashSet, VecDeque};
 
 advent_of_code::solution!(12);
@@ -95,13 +96,6 @@ fn calculate_perimeter(region: &HashSet<(usize, usize)>, grid: &Vec<Vec<char>>) 
 pub fn part_one(input: &str) -> Option<u32> {
     let grid = input_to_matrix(input);
     let regions = find_regions(&grid);
-    // for region in regions.iter() {
-    //     println!(
-    //         "Region: {:?} Perimeter: {}",
-    //         region,
-    //         calculate_perimeter(region, &grid)
-    //     );
-    // }
     regions
         .iter()
         .map(|r| r.len() as u32 * calculate_perimeter(r, &grid))
@@ -109,8 +103,69 @@ pub fn part_one(input: &str) -> Option<u32> {
         .into()
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    None
+fn sides(region: &[(f64, f64)]) -> usize {
+    let mut corner_candidates = HashSet::new();
+
+    for &(r, c) in region {
+        let corners = [
+            (r - 0.5, c - 0.5),
+            (r + 0.5, c - 0.5),
+            (r + 0.5, c + 0.5),
+            (r - 0.5, c + 0.5),
+        ];
+
+        for &corner in &corners {
+            // Scale and convert to integers to avoid precision issues
+            let scaled_corner = ((corner.0 * 10.0) as i64, (corner.1 * 10.0) as i64);
+            corner_candidates.insert(scaled_corner);
+        }
+    }
+
+    let mut corners = 0;
+    for &(cr, cc) in &corner_candidates {
+        let config: Vec<bool> = [
+            ((cr - 5, cc - 5), region),
+            ((cr + 5, cc - 5), region),
+            ((cr + 5, cc + 5), region),
+            ((cr - 5, cc + 5), region),
+        ]
+        .iter()
+        .map(|&(corner, region)| region.contains(&(corner.0 as f64 / 10.0, corner.1 as f64 / 10.0)))
+        .collect();
+
+        let number = config.iter().filter(|&&x| x).count();
+        match number {
+            1 => {
+                corners += 1;
+            }
+            2 => {
+                if config == vec![true, false, true, false]
+                    || config == vec![false, true, false, true]
+                {
+                    corners += 2;
+                }
+            }
+            3 => {
+                corners += 1;
+            }
+            _ => {}
+        }
+    }
+
+    corners
+}
+
+pub fn part_two(input: &str) -> Option<usize> {
+    let grid = input_to_matrix(input);
+    let regions = find_regions(&grid);
+    regions
+        .iter()
+        .map(|r| {
+            let region: Vec<(f64, f64)> = r.iter().map(|&(a, b)| (a as f64, b as f64)).collect();
+            r.len() * sides(&region)
+        })
+        .sum::<usize>()
+        .into()
 }
 
 #[cfg(test)]
@@ -126,6 +181,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(80));
     }
 }
