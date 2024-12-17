@@ -114,8 +114,100 @@ pub fn part_one(input: &str) -> Option<usize> {
     Some(results)
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    None
+fn cal_gps_coordinates_2(grid: &Vec<Vec<char>>) -> usize {
+    let mut results = 0;
+    for (i, row) in grid.iter().enumerate() {
+        for (j, &cell) in row.iter().enumerate() {
+            if cell == '[' {
+                results += 100 * i + j;
+            }
+        }
+    }
+    results
+}
+
+fn simulate_2(moves: &Vec<char>, grid: &Vec<Vec<char>>) -> usize {
+    let mut grid = grid.clone();
+    let mut init_point = robot_location(&grid);
+    // println!("init point: {:?}", init_point);
+    // for row in grid.iter() {
+    //     println!("{}", row.iter().collect::<String>());
+    // }
+    for m in moves {
+        let mut to_move = vec![init_point];
+        let mut stop = false;
+
+        let mut i = 0;
+        while i < to_move.len() {
+            let curr_point = to_move[i];
+            let curr_point = cal_next_point(&curr_point, m);
+
+            if to_move.contains(&curr_point) {
+                i += 1;
+                continue;
+            }
+
+            let value = grid[curr_point.0][curr_point.1];
+            if value == '#' {
+                stop = true;
+                break;
+            }
+            if value == '[' {
+                to_move.push(curr_point);
+                to_move.push((curr_point.0, curr_point.1 + 1));
+                // println!("to_move: {:?}", to_move);
+            }
+            if value == ']' {
+                to_move.push(curr_point);
+                to_move.push((curr_point.0, curr_point.1 - 1));
+                // println!("to_move: {:?}", to_move);
+            }
+
+            i += 1;
+        }
+
+        if stop {
+            continue;
+        }
+
+        let grid_clone = grid.clone();
+
+        grid[init_point.0][init_point.1] = '.';
+        let next_point = cal_next_point(&init_point, m);
+        grid[next_point.0][next_point.1] = '@';
+
+        for point in to_move.iter().skip(1) {
+            grid[point.0][point.1] = '.';
+        }
+
+        for point in to_move.iter().skip(1) {
+            let next_point = cal_next_point(point, m);
+            grid[next_point.0][next_point.1] = grid_clone[point.0][point.1];
+        }
+
+        // println!("{}", m);
+        // for row in grid.iter() {
+        //     println!("{}", row.iter().collect::<String>());
+        // }
+
+        init_point = cal_next_point(&init_point, m);
+        // println!("next point: {:?}", init_point);
+    }
+
+    cal_gps_coordinates_2(&grid)
+}
+
+pub fn part_two(input: &str) -> Option<usize> {
+    let (wearhouse, robot_moves) = parse(input);
+    let big_wearhouse = wearhouse
+        .replace("#", "##")
+        .replace("O", "[]")
+        .replace(".", "..")
+        .replace("@", "@.");
+    let grid = wearhouse_grid(&big_wearhouse);
+    let moves = moves_list(robot_moves);
+    let results = simulate_2(&moves, &grid);
+    Some(results)
 }
 
 #[cfg(test)]
@@ -130,7 +222,29 @@ mod tests {
 
     #[test]
     fn test_part_two() {
-        let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        let input = "##########
+#..O..O.O#
+#......O.#
+#.OO..O.O#
+#..O@..O.#
+#O#..O...#
+#O..O..O.#
+#.OO.O.OO#
+#....O...#
+##########
+
+<vv>^<v^>v>^vv^v>v<>v^v<v<^vv<<<^><<><>>v<vvv<>^v^>^<<<><<v<<<v^vv^v>^
+vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
+><>vv>v^v^<>><>>>><^^>vv>v<^^^>>v^v^<^^>v^^>v^<^v>v<>>v^v^<v>v^^<^^vv<
+<<v<^>>^^^^>>>v^<>vvv^><v<<<>^^^vv^<vvv>^>v<^^^^v<>^>vvvv><>>v^<<^^^^^
+^><^><>>><>^^<<^^v>>><^<v>^<vv>>v>>>^v><>^v><<<<v>>v<v<v>vvv>^<><<>^><
+^>><>^v<><^vvv<^^<><v<<<<<><^v<<<><<<^^<v<^^^><^>>^<v^><<<^>>^v<v^v<v^
+>^>>^v>vv>^<<^v<>><<><<v<<v><>v<^vv<<<>^^v^>^^>>><<^v>>v^v><^^>>^<>vv^
+<><^^>^^^<><vvvvv^v<v<<>^v<v>v<<^><<><<><<<^^<<<^<<>><<><^^^>^^<>^>v<>
+^^>vv<^v^v<vv>^<><v<^v>^^^>>>^^vvv^>vvv<>>>^<^>>>>>^<<^v>^vvv<>^<><<v>
+v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^
+";
+        let result = part_two(input);
+        assert_eq!(result, Some(9021));
     }
 }

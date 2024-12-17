@@ -12,7 +12,7 @@
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=09",
+                    "--bin=15",
                     "test_part_two",
                     "--package=advent_of_code"
                 ],
