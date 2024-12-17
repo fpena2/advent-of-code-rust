@@ -70,6 +70,7 @@ fn calculate_min_score(machine: Machine) -> Option<u64> {
     let mut min_score = u64::MAX;
     for a in 0..100 {
         for b in 0..100 {
+            // NOTE: two equations and two unknowns
             if a_button.x * a + b_button.x * b == machine.prize.0
                 && a_button.y * a + b_button.y * b == machine.prize.1
             {
@@ -95,8 +96,32 @@ pub fn part_one(input: &str) -> Option<u64> {
     Some(total)
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
+fn calculate_min_score_algebra(machine: Machine) -> Option<f64> {
+    let offset: u64 = 10_000_000_000_000;
+    let a_button = machine.buttons.a;
+    let b_button = machine.buttons.b;
+    let price_x = (machine.prize.0 + offset) as f64;
+    let price_y = (machine.prize.1 + offset) as f64;
+    let a_presses = (price_x * b_button.y as f64 - price_y * b_button.x as f64)
+        / (a_button.x as f64 * b_button.y as f64 - a_button.y as f64 * b_button.x as f64);
+    let b_presses = (price_x - a_button.x as f64 * a_presses) / b_button.x as f64;
+
+    // Make sure the presses are integers
+    if a_presses % 1.0 == 0.0 && b_presses % 1.0 == 0.0 {
+        return Some(a_presses * 3.0 + b_presses);
+    }
+
     None
+}
+pub fn part_two(input: &str) -> Option<u64> {
+    let machines = parse(input);
+    let mut total = 0;
+    for machine in machines {
+        if let Some(score) = calculate_min_score_algebra(machine) {
+            total += score as u64;
+        }
+    }
+    Some(total)
 }
 
 #[cfg(test)]
@@ -112,6 +137,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(480));
     }
 }
