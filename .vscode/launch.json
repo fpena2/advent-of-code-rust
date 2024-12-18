@@ -12,8 +12,8 @@
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=15",
-                    "test_part_two",
+                    "--bin=16",
+                    "test_part_one",
                     "--package=advent_of_code"
                 ],
             },
