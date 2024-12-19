@@ -1,5 +1,3 @@
-use rayon::slice::ParallelSliceMut;
-
 advent_of_code::solution!(17);
 
 #[derive(Debug)]
