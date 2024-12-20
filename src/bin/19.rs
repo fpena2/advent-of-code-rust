@@ -2,64 +2,93 @@ use std::collections::HashMap;
 
 advent_of_code::solution!(19);
 
-fn get_towels(input: &str) -> Vec<String> {
-    let block: &str = input.lines().next().unwrap();
-    block.split(", ").map(|line| line.to_string()).collect()
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+struct Design(String);
+struct Towel(String);
+struct AvailableTowels(Vec<Towel>);
+#[derive(Debug)]
+struct Designs(Vec<Design>);
+
+impl Design {
+    fn count_ways_to_construct(
+        &self,
+        towels: &AvailableTowels,
+        memory: &mut HashMap<Design, u64>,
+    ) -> u64 {
+        if let Some(count) = memory.get(&self) {
+            return *count;
+        }
+
+        if self.0.is_empty() {
+            return 1;
+        }
+
+        let mut count = 0;
+        for towel in towels.0.iter() {
+            if self.0.starts_with(&towel.0) {
+                // Create a new Design with the remaining substring
+                let remaining = &self.0[towel.0.len()..];
+                let new_design = Design(remaining.to_string());
+                count += new_design.count_ways_to_construct(towels, memory);
+            }
+        }
+
+        *memory.entry(self.clone()).or_insert(0) += count;
+        count
+    }
 }
 
-fn get_designs(input: &str) -> Vec<String> {
-    let designs: Vec<String> = input.lines().skip(2).map(|line| line.to_string()).collect();
-    designs
-}
-
-fn valid_combinations(
-    design: &String,
-    towels: &Vec<String>,
-    memory: &mut HashMap<String, u64>,
-) -> u64 {
-    if let Some(count) = memory.get(design) {
-        return *count;
-    }
-
-    if design.is_empty() {
-        return 1;
-    }
-
-    let mut count = 0;
-    for towel in towels.iter() {
-        if design.starts_with(towel) {
-            count += valid_combinations(&(design[towel.len()..]).to_string(), towels, memory);
+impl TryFrom<&str> for Designs {
+    type Error = &'static str;
+    fn try_from(input: &str) -> Result<Self, Self::Error> {
+        let vec: Vec<String> = input.lines().skip(2).map(|line| line.to_string()).collect();
+        if vec.len() > 0 {
+            Ok(Designs(vec.iter().map(|a| Design(a.to_string())).collect()))
+        } else {
+            Err("Invalid input")
         }
     }
-
-    *memory.entry(design.to_string()).or_insert(0) += count;
-    count
 }
 
-pub fn part_one(input: &str) -> Option<u64> {
-    let towels = get_towels(input);
-    let designs = get_designs(input);
-
-    let mut total = 0;
-    let mut memory: HashMap<String, u64> = HashMap::new();
-    for design in designs.iter() {
-        if valid_combinations(design, &towels, &mut memory) > 0 {
-            total += 1;
+impl TryFrom<&str> for AvailableTowels {
+    type Error = &'static str;
+    fn try_from(input: &str) -> Result<Self, Self::Error> {
+        if let Some(block) = input.lines().next() {
+            let vec = block
+                .split(", ")
+                .map(|line| Towel(line.to_string()))
+                .collect();
+            Ok(AvailableTowels(vec))
+        } else {
+            Err("Invalid input")
         }
     }
+}
 
-    Some(total)
+pub fn part_one(input: &str) -> Option<usize> {
+    let available_towels = AvailableTowels::try_from(input).ok()?;
+    let designs = Designs::try_from(input).ok()?;
+
+    let mut memory: HashMap<Design, u64> = HashMap::new();
+    let valid_design_count = designs
+        .0
+        .iter()
+        .filter(|d| d.count_ways_to_construct(&available_towels, &mut memory) > 0)
+        .count();
+
+    Some(valid_design_count)
 }
 
 pub fn part_two(input: &str) -> Option<u64> {
-    let towels = get_towels(input);
-    let designs = get_designs(input);
+    let available_towels = AvailableTowels::try_from(input).ok()?;
+    let designs = Designs::try_from(input).ok()?;
 
-    let mut total = 0;
-    let mut memory: HashMap<String, u64> = HashMap::new();
-    for design in designs.iter() {
-        total += valid_combinations(design, &towels, &mut memory);
-    }
+    let mut memory: HashMap<Design, u64> = HashMap::new();
+    let total: u64 = designs
+        .0
+        .iter()
+        .map(|d| d.count_ways_to_construct(&available_towels, &mut memory))
+        .sum();
 
     Some(total)
 }
