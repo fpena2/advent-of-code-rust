@@ -102,13 +102,10 @@ impl Computer {
     fn run(&mut self) {
         let programs_len = self.programs.0.len();
         while self.pc < programs_len {
-            // First prog is the OpCode and second is the operand
-            let val_1 = self.programs.0[self.pc].0;
-            let val_2 = self.programs.0[self.pc + 1].0;
-
-            let opcode = OpCode::from(val_1);
-            let operand = val_2;
-            self.calculate(opcode, operand);
+            // First program is the OpCode and second is the operand
+            let prog_1 = self.programs.0[self.pc].0;
+            let prog_2 = self.programs.0[self.pc + 1].0;
+            self.calculate(OpCode::from(prog_1), prog_2);
         }
     }
 
@@ -158,8 +155,7 @@ impl Computer {
                 self.pc += 2;
             }
             OpCode::Out => {
-                let output = combo % 8;
-                self.output.push(output);
+                self.output.push(combo % 8);
                 self.pc += 2;
             }
             OpCode::Bdv => {
